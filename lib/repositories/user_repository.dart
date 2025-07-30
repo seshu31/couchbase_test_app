@@ -24,7 +24,25 @@ class UserRepository {
 
   Future<User?> findUserByEmail(String email) async {
     try {
-      // TODO: Implement proper querying when ResultSet API is fixed
+      final query = const QueryBuilder()
+          .select(
+        SelectResult.expression(Meta.id),
+        SelectResult.property('email'),
+        SelectResult.property('password'),
+        SelectResult.property('createdAt'),
+      )
+          .from(DataSource.collection(collection))
+          .where(
+        Expression.property('type').equalTo(Expression.value('user')).and(
+          Expression.property('email').equalTo(Expression.value(email)),
+        ),
+      );
+
+      final results = await query.execute();
+      final resultsList = await results.asStream().toList();
+      if (resultsList.isNotEmpty) {
+        return User.fromDict(resultsList.first);
+      }
       return null;
     } catch (e) {
       throw UserRepositoryException('Failed to find user by email: $e');
@@ -33,7 +51,27 @@ class UserRepository {
 
   Future<User?> findUserByEmailAndPassword(String email, String password) async {
     try {
-      // TODO: Implement proper querying when ResultSet API is fixed
+      final query = const QueryBuilder()
+          .select(
+        SelectResult.expression(Meta.id),
+        SelectResult.property('email'),
+        SelectResult.property('password'),
+        SelectResult.property('createdAt'),
+      )
+          .from(DataSource.collection(collection))
+          .where(
+        Expression.property('type').equalTo(Expression.value('user')).and(
+          Expression.property('email').equalTo(Expression.value(email)),
+        ).and(
+          Expression.property('password').equalTo(Expression.value(password)),
+        ),
+      );
+
+      final results = await query.execute();
+      final resultsList = await results.asStream().toList();
+      if (resultsList.isNotEmpty) {
+        return User.fromDict(resultsList.first);
+      }
       return null;
     } catch (e) {
       throw UserRepositoryException('Failed to find user by credentials: $e');

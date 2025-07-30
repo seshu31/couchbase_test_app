@@ -16,6 +16,7 @@ import 'repositories/log_message_repository.dart';
 // Services
 import 'services/auth_manager.dart';
 import 'services/sync_manager.dart';
+import 'services/remote_data_service.dart';
 
 // Widgets
 import 'widgets/login_page.dart';
@@ -489,6 +490,7 @@ late Collection logMessages;
 late Collection users;
 late LogMessageRepository logMessageRepository;
 late UserRepository userRepository;
+late RemoteDataService remoteDataService;
 late AuthManager authManager;
 late SyncManager syncManager;
 
@@ -537,7 +539,9 @@ Future<void> _initializeRepositories() async {
 }
 
 Future<void> _initializeServices() async {
-  authManager = AuthManager(userRepository);
   syncManager = SyncManager();
   await syncManager.initialize(database, [logMessages, users]);
-}
+  
+  remoteDataService = RemoteDataService(userRepository, syncManager);
+  authManager = AuthManager(userRepository, remoteDataService);
+} 
