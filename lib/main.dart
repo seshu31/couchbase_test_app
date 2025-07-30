@@ -92,17 +92,19 @@ class LogMessagesPage extends StatefulWidget {
   State<LogMessagesPage> createState() => _LogMessagesPageState();
 }
 
-class _LogMessagesPageState extends State<LogMessagesPage> {
+class _LogMessagesPageState extends State<LogMessagesPage> with TickerProviderStateMixin {
   List<app_models.AppLogMessage> _logMessages = [];
   StreamSubscription? _logMessagesSub;
   StreamSubscription? _syncStatusSub;
   String _syncStatus = 'Disconnected';
   bool _showAllMessages = false;
   final Map<String, String> _userEmailCache = {};
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _setupLogMessagesStream();
     _setupSyncStatusListener();
     _startSync();
@@ -198,6 +200,7 @@ class _LogMessagesPageState extends State<LogMessagesPage> {
   void dispose() {
     _logMessagesSub?.cancel();
     _syncStatusSub?.cancel();
+    _tabController.dispose();
     syncManager.stopSync();
     super.dispose();
   }
@@ -205,19 +208,34 @@ class _LogMessagesPageState extends State<LogMessagesPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: const Text('Log Messages'),
+      title: Text(widget.currentUser.email),
+      bottom: TabBar(
+        controller: _tabController,
+        tabs: const [
+          Tab(
+            icon: Icon(Icons.folder),
+            text: 'Cases',
+          ),
+          Tab(
+            icon: Icon(Icons.location_on),
+            text: 'Sites',
+          ),
+        ],
+      ),
       actions: [
         _buildSyncStatusIndicator(),
         _buildViewToggleButton(),
-        _buildLogoutMenu(),
+        _buildLogoutButton(),
       ],
     ),
     body: SafeArea(
-      child: Column(children: [
-        Expanded(child: _buildMessagesList()),
-        const Divider(height: 0),
-        _buildMessageForm(),
-      ]),
+      child: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildCasesTab(),
+          _buildSitesTab(),
+        ],
+      ),
     ),
   );
 
@@ -246,25 +264,39 @@ class _LogMessagesPageState extends State<LogMessagesPage> {
     );
   }
 
-  Widget _buildLogoutMenu() {
-    return PopupMenuButton<String>(
-      onSelected: (value) {
-        if (value == 'logout') {
-          _handleLogout();
-        }
+  Widget _buildLogoutButton() {
+    return IconButton(
+      icon: const Icon(Icons.logout),
+      onPressed: _showLogoutConfirmation,
+      tooltip: 'Logout',
+    );
+  }
+
+  void _showLogoutConfirmation() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirm Logout'),
+          content: Text('Are you sure you want to logout from ${widget.currentUser.email}?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _handleLogout();
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              child: const Text('Logout'),
+            ),
+          ],
+        );
       },
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          value: 'logout',
-          child: Row(
-            children: [
-              const Icon(Icons.logout),
-              const SizedBox(width: 8),
-              Text('Logout (${widget.currentUser.email})'),
-            ],
-          ),
-        ),
-      ],
     );
   }
 
@@ -280,6 +312,47 @@ class _LogMessagesPageState extends State<LogMessagesPage> {
           userEmail: _showAllMessages ? _getUserEmail(logMessage) : null,
         );
       },
+    );
+  }
+
+  Widget _buildCasesTab() {
+    return Column(
+      children: [
+        Expanded(child: _buildMessagesList()),
+        const Divider(height: 0),
+        _buildMessageForm(),
+      ],
+    );
+  }
+
+  Widget _buildSitesTab() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.location_on,
+            size: 64,
+            color: Colors.grey,
+          ),
+          SizedBox(height: 16),
+          Text(
+            'Sites',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Sites functionality coming soon...',
+            style: TextStyle(
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

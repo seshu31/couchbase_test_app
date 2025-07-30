@@ -51,7 +51,27 @@ class _LoginPageState extends State<LoginPage> {
       }
 
       if (user != null) {
-        widget.onLoginSuccess(user);
+        if (_isRegistering) {
+          // After successful registration, switch to login mode
+          setState(() {
+            _isRegistering = false;
+            _errorMessage = 'Registration successful! Please login with your credentials.';
+          });
+          // Clear the form
+          _emailController.clear();
+          _passwordController.clear();
+          // Clear success message after 3 seconds
+          Future.delayed(const Duration(seconds: 3), () {
+            if (mounted) {
+              setState(() {
+                _errorMessage = null;
+              });
+            }
+          });
+        } else {
+          // After successful login, go to home screen
+          widget.onLoginSuccess(user);
+        }
       } else {
         setState(() {
           _errorMessage = _isRegistering 
@@ -77,7 +97,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: Text(_isRegistering ? 'Register' : 'Login'),
+      title: Text(_isRegistering ? 'Create Account' : 'Sign In'),
     ),
     body: Padding(
       padding: const EdgeInsets.all(AppConstants.spacing),
@@ -125,11 +145,15 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildErrorMessage() {
+    final isSuccessMessage = _errorMessage!.contains('successful');
     return Padding(
       padding: const EdgeInsets.only(bottom: AppConstants.spacing),
       child: Text(
         _errorMessage!,
-        style: const TextStyle(color: Colors.red),
+        style: TextStyle(
+          color: isSuccessMessage ? Colors.green : Colors.red,
+          fontWeight: isSuccessMessage ? FontWeight.w500 : FontWeight.normal,
+        ),
       ),
     );
   }
@@ -141,7 +165,7 @@ class _LoginPageState extends State<LoginPage> {
         onPressed: _isLoading ? null : _submit,
         child: _isLoading
             ? const CircularProgressIndicator()
-            : Text(_isRegistering ? 'Register' : 'Login'),
+            : Text(_isRegistering ? 'Create Account' : 'Sign In'),
       ),
     );
   }

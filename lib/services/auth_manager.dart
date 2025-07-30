@@ -13,7 +13,7 @@ class AuthManager {
     try {
       // TODO: Add duplicate check when querying is implemented
       final user = await userRepository.createUser(email, password);
-      _currentUser = user;
+      // Don't set current user after registration - user needs to login separately
       return user;
     } catch (e) {
       throw AuthException('Registration failed: $e');
